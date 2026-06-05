@@ -48,44 +48,58 @@ app.get('/v1/models', (req, res) => {
 async function handleChat(req, res) {
   try {
     const body = req.body;
-    const requestedModel = body.model || 'gpt-4o';
-    const nimModel = MODEL_MAPPING[requestedModel] || DEFAULT_MODEL;
+    const nimModel = 'deepseek-ai/deepseek-v4-flash';
 
     const messages = body.messages || [{ role: 'user', content: body.prompt || '' }];
+    const isStream = body.stream || false;
 
     const nimRequest = {
-  model: nimModel,
-  messages,
-  temperature: body.temperature || 0.7,
-  max_tokens: body.max_tokens || 2048,
-  stream: false,
-  extra_body: {
-    chat_template_kwargs: { thinking: false }
-  }
-};
+      model: nimModel,
+      messages,
+      temperature: body.temperature || 0.7,
+      max_tokens: body.max_tokens || 2048,
+      stream: isStream,
+      extra_body: {
+        chat_template_kwargs: { thinking: false }
+      }
+    };
 
     const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
       headers: {
         'Authorization': `Bearer ${NIM_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      timeout: 800000
+      responseType: isStream ? 'stream' : 'json',
+      timeout: 120000
     });
 
-    const content = response.data.choices[0].message.content;
+    if (isStream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
-    res.json({
-      id: `chatcmpl-${Date.now()}`,
-      object: 'chat.completion',
-      created: Math.floor(Date.now() / 1000),
-      model: requestedModel,
-      choices: [{
-        index: 0,
-        message: { role: 'assistant', content },
-        finish_reason: 'stop'
-      }],
-      usage: response.data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-    });
+      response.data.on('data', (chunk) => res.write(chunk));
+      response.data.on('end', () => res.end());
+      response.data.on('error', (err) => {
+        console.error('Stream error:', err);
+        res.end();
+      });
+    } else {
+      const msg = response.data.choices[0].message;
+      const content = msg.content || msg.reasoning_content || '';
+      res.json({
+        id: `chatcmpl-${Date.now()}`,
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: body.model || nimModel,
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content },
+          finish_reason: 'stop'
+        }],
+        usage: response.data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+      });
+    }
 
   } catch (error) {
     console.error('Error:', error.response?.data || error.message);
@@ -94,7 +108,6 @@ async function handleChat(req, res) {
     });
   }
 }
-
 // All possible endpoints Chub might call
 app.post('/v1/chat/completions', handleChat);
 app.post('/v1/chat', handleChat);
