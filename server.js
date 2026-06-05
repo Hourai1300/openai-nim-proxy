@@ -22,12 +22,12 @@ const MODEL_MAPPING = {
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   'gpt-4': 'meta/llama-3.1-70b-instruct',
   'gpt-4-turbo': 'meta/llama-3.1-70b-instruct',
-  'gpt-4o': 'deepseek-ai/deepseek-v4-pro',
+  'gpt-4o': 'deepseek-ai/deepseek-v4-flash',
   'claude-3-opus': 'meta/llama-3.1-70b-instruct',
   'claude-3-sonnet': 'meta/llama-3.1-8b-instruct',
 };
 
-const DEFAULT_MODEL = 'deepseek-ai/deepseek-v4-pro';
+const DEFAULT_MODEL = 'deepseek-ai/deepseek-v4-flash';
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
