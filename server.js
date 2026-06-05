@@ -56,8 +56,10 @@ async function handleChat(req, res) {
     const nimRequest = {
       model: nimModel,
       messages,
-      temperature: body.temperature || 0.7,
-      max_tokens: body.max_tokens || 2048,
+      temperature: body.temperature || 0.6,
+      max_tokens: body.max_tokens || 1024,
+      top_p: 0.9,
+      frequency_penalty: 0.1,
       stream: isStream,
       extra_body: {
         chat_template_kwargs: { thinking: false }
