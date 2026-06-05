@@ -66,7 +66,7 @@ async function handleChat(req, res) {
         'Authorization': `Bearer ${NIM_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      timeout: 60000
+      timeout: 800000
     });
 
     const content = response.data.choices[0].message.content;
