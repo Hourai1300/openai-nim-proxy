@@ -54,12 +54,15 @@ async function handleChat(req, res) {
     const messages = body.messages || [{ role: 'user', content: body.prompt || '' }];
 
     const nimRequest = {
-      model: nimModel,
-      messages,
-      temperature: body.temperature || 0.7,
-      max_tokens: body.max_tokens || 2048,
-      stream: false
-    };
+  model: nimModel,
+  messages,
+  temperature: body.temperature || 0.7,
+  max_tokens: body.max_tokens || 2048,
+  stream: false,
+  extra_body: {
+    chat_template_kwargs: { thinking: false }
+  }
+};
 
     const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
       headers: {
