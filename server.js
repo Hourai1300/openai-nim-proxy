@@ -236,7 +236,31 @@ app.all('*', (req, res) => {
     }
   });
 });
+// Oobabooga compatible endpoint
+app.post('/v1/chat', async (req, res) => {
+  req.url = '/v1/chat/completions';
+  req.body.model = req.body.model || 'gpt-4o';
+  app.handle(req, res);
+});
 
+app.post('/api/v1/chat', async (req, res) => {
+  req.body.model = req.body.model || 'gpt-4o';
+  const nimRequest = {
+    model: MODEL_MAPPING[req.body.model] || 'deepseek-ai/deepseek-v3.1',
+    messages: req.body.messages || [{ role: 'user', content: req.body.user_input || '' }],
+    temperature: req.body.temperature || 0.7,
+    max_tokens: req.body.max_new_tokens || 1024,
+    stream: false
+  };
+  try {
+    const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
+      headers: { 'Authorization': `Bearer ${NIM_API_KEY}`, 'Content-Type': 'application/json' }
+    });
+    res.json({ results: [{ history: { visible: [], internal: [] }, text: response.data.choices[0].message.content } ] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.listen(PORT, () => {
   console.log(`OpenAI to NVIDIA NIM Proxy running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
